@@ -1,0 +1,71 @@
+needsPackage "ChainComplexOperations"
+needsPackage "ChainComplexExtras"
+
+cofactor = M -> (n=rank source M;
+return determinant(M)*id_(Q^n)//M;
+)
+
+mat2Vec = M -> (matrix {flatten entries M})
+
+vec2Mat = (v,n) -> (matrix pack(n,flatten entries v))
+
+
+
+psiGN = M -> (n=rank source M;
+M1=new MutableList;
+for i from 0 to n-1 do (
+	for j from 0 to n-1 do (
+		F=mutableMatrix(ring M,n,n);
+		F_(i,j)=1;
+		M1#(#M1)=(mat2Vec(M*matrix(F)))|(mat2Vec(matrix(F)*M));
+	);
+);
+return matrix entries transpose matrix pack(1,toList M1);
+)
+
+phiGN = M -> (n=rank source M;
+M1=new MutableList;
+for i from 0 to n-1 do (
+	for j from 0 to n-1 do (
+		F=mutableMatrix(ring M,n,n);
+		F_(i,j)=1;
+		M1#(#M1)=mat2Vec(matrix(F)*M);
+	);
+);
+for i from 0 to n-1 do (
+	for j from 0 to n-1 do (
+		F=mutableMatrix(ring M,n,n);
+		F_(i,j)=-1;
+		M1#(#M1)=mat2Vec(M*matrix(F));
+	);
+);
+return matrix entries transpose matrix pack(1,toList M1);
+)
+
+d1GN = M-> (n=rank source M;
+Mtilde = cofactor(M);
+M1=new MutableList;
+for i from 0 to n-1 do (
+	for j from 0 to n-1 do (
+		F=mutableMatrix(ring M,n,n);
+		F_(i,j)=1;
+		M1#(#M1)=trace(Mtilde*matrix(F));
+	);
+);
+return matrix entries transpose matrix pack(1,toList M1);
+)
+
+
+gulliksenNegard = M -> (n=rank source M;
+i = transpose (mat2Vec(id_(Q^n))|mat2Vec(id_(Q^n)));
+pii=(mat2Vec(id_(Q^n))|mat2Vec(-id_(Q^n)));
+I1=inducedMap(ambient image psiGN(M),image psiGN(M));
+I2=inducedMap(ambient kernel pii,kernel pii);
+ind1=I1//I2;
+ind2=inducedMap((ker pii)/(image i),ker pii);
+d3=prune (ind2*ind1);
+ind3=phiGN(M)*inducedMap(ambient ker pii,ker pii);
+d2=matrix entries transpose(transpose(prune ind3)//transpose(prune ind2));
+d4=transpose mat2Vec(cofactor(M));
+return chainComplex({d1GN(M),d2,d3,d4});
+)
