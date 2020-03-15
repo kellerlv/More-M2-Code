@@ -1,0 +1,217 @@
+needsPackage "KustinMiller"
+needsPackage "ChainComplexOperations"
+needsPackage "ChainComplexExtras"
+
+
+
+-- u and v are complementary sublists of 0..n-1
+-- this function counts the number of inversion to unshuffle u|v
+numberOfInversions = (u,v) -> (
+    c := 0;
+    for j in v do (
+	for i in u do (
+	    if j-i<0 then c=c+1;
+	    );
+	);
+    return c;
+    )
+
+
+--computes sign of permutation
+sgn = v -> (c:=0;
+for i in v do (
+	for j in v_{0..position(v,l->l==i)} do (
+		if i-j < 0 then c = c+1;
+	);
+);
+return (-1)^c;
+)
+
+
+
+--this code computes the comultiplication map
+--wedge^(p+q) F -> wedge^p F ** wedge^q F 
+--with respect to the standard basis orders
+extComult = (p,q,F) -> (L:={};
+      n:=rank F;
+      b1:=binomial(n,p)-1;
+      b2:=binomial(n,q)-1;
+      b3:=binomial(n,p+q)-1;
+      L1:=subsets(toList(0..n-1),p);
+      L2:=subsets(toList(0..n-1),q);
+	--labels for basis of p+q exterior power:
+      L3:=subsets(toList(0..n-1),p+q);
+	--labels for the basis of the tensor product of 
+	--p and q exterior powers:
+      for i from 0 to b1 do (
+		for j from 0 to b2 do (
+		L=L|{(L1_i,L2_j)}; );
+	);
+      Mmut := mutableMatrix(ring(F),#L,#L3);
+      for k from 0 to b3 do (
+      for l from 0 to (#L)-1 do (
+      	if (set(flatten(L_l))===set((L3)_k)) then (
+		Mmut_(l,k) = (-1)^(numberOfInversions((L_l)_0,(L_l)_1)); 
+	);
+	);
+	);
+return map(exteriorPower(p,F)**exteriorPower(q,F),exteriorPower(p+q,F),promote(matrix Mmut, ring(F)));
+)
+
+
+
+
+
+--this function computes the contraction map
+--sending wedge^r (F*) ** wedge^n (F) -> wedge^(n-r) F
+extContract = (r,n,F) -> (D:=extComult(r,n-r,F);
+M:=map((ring(F))^1,exteriorPower(r,dual F)**exteriorPower(r,F),matrix{flatten entries id_(exteriorPower(r,F))});
+a:=id_(exteriorPower(r,dual(F)))**D;
+b:=M**id_(exteriorPower(n-r,F));
+C:=b*a;
+return C;
+)
+
+
+
+--this function computes the comultiplication
+--map on the divided power algebra 
+--D_(p+q) F -> D_p F ** D_q F with respect
+--to the GrRevLex basis order
+divComult = (p,q,F) -> (n:=rank(F);
+L:=compositions(n,p+q);
+L1:=compositions(n,p);
+L2:=compositions(n,q);
+L3=new MutableList;
+for i from 0 to (#L1)-1 do (
+	for j from 0 to (#L2)-1 do (
+		L3#(#L3)=(L1_i,L2_j);
+	);
+);
+L3=toList L3;
+Mmut:=mutableMatrix(ring(F),#L3,#L);
+for i from 0 to (#L)-1 do (
+	for j from 0 to (#L3)-1 do (
+		for k in L1 do (
+			if (k,L_i-k)==L3_j then Mmut_(j,i)=1;
+		);
+	);
+);
+return map(symmetricPower(p,F)**symmetricPower(q,F),symmetricPower(p+q,F),matrix Mmut);
+)
+
+
+--this computes the natural map
+--D_p F ** D_q F -> D_(p+q) F with
+--respect to GrRevLex basis order
+divProduct = (p,q,F) -> (n:=rank(F);
+L:=compositions(n,p+q);
+L1:=compositions(n,p);
+L2:=compositions(n,q);
+L3=new MutableList;
+for i from 0 to (#L1)-1 do (
+	for j from 0 to (#L2)-1 do (
+		L3#(#L3)=(L1_i,L2_j);
+	);
+);
+L3=toList L3;
+Mmut:=mutableMatrix(ring(F),#L,#L3);
+for i from 0 to (#L)-1 do (
+	for j from 0 to (#L3)-1 do (
+		for k in L1 do (
+			if (k,L_i-k)==L3_j then Mmut_(i,j)=product(k,L_i-k,(l,m)->binomial(l+m,m));
+		);
+	);
+);
+return map(symmetricPower(p+q,F),symmetricPower(p,F)**symmetricPower(q,F),matrix Mmut);
+)
+
+
+--this computes the comultiplication
+--map S_(p+q) F -> S_p F ** S_q F with
+--respect to GrRevLex order.
+symComult = (p,q,F) -> (n:=rank(F);
+L:=compositions(n,p+q);
+L1:=compositions(n,p);
+L2:=compositions(n,q);
+L3:={};
+for i from 0 to (#L1)-1 do (
+	for j from 0 to (#L2)-1 do (
+		L3=L3|{(L1_i,L2_j)};
+	);
+);
+Mmut:=mutableMatrix(ring(F),#L3,#L);
+for i from 0 to (#L)-1 do (
+	for j from 0 to (#L3)-1 do (
+		for k in L1 do (
+			if (k,L_i-k)==L3_j then Mmut_(j,i)=product(k,L_i-k,(l,m)->binomial(l+m,m));
+		);
+	);
+);
+return map(symmetricPower(p,F)**symmetricPower(q,F),symmetricPower(p+q,F),matrix Mmut);
+)
+
+--this computes the natural map
+--S_p F ** S_q F -> S_(p+q) F with
+--respect to GrRevLex basis order
+symProduct = (p,q,F) -> (n:=rank(F);
+L:=compositions(n,p+q);
+L1:=compositions(n,p);
+L2:=compositions(n,q);
+L3:={};
+for i from 0 to (#L1)-1 do (
+	for j from 0 to (#L2)-1 do (
+		L3=L3|{(L1_i,L2_j)};
+	);
+);
+Mmut:=mutableMatrix(ring(F),#L,#L3);
+for i from 0 to (#L)-1 do (
+	for j from 0 to (#L3)-1 do (
+		for k in L1 do (
+			if (k,L_i-k)==L3_j then Mmut_(i,j)=1;
+		);
+	);
+);
+return map(symmetricPower(p+q,F),symmetricPower(p,F)**symmetricPower(q,F),matrix Mmut);
+)
+
+ENback = (a,b,M) -> (F:=source M;
+G:=target M;
+C:=extComult(a-1,1,F);
+D:=divContract(1,b,G);
+H:=(id_(exteriorPower(a-1,F))**D)*(id_(exteriorPower(a-1,F))**M**symmetricPower(b,G))*(C**id_(symmetricPower(b,G)));
+return H;
+)
+
+ENfront = (a,b,M) -> (F:=source M;
+G:=target M;
+C:=extComult(a-1,1,F);
+D:=map(symmetricPower(b+1,G),G**symmetricPower(b,G),dual divComult(1,b,G));
+H:=(id_(exteriorPower(a-1,F))**D)*(id_(exteriorPower(a-1,F))**M**symmetricPower(b,G))*(C**id_(symmetricPower(b,G)));
+return H;
+)
+
+ENbump = (a,M) -> (F:=source M;
+G:=target M;
+g:=rank(G);
+C:=extComult(a-g,g,F);
+D:=map(symmetricPower(0,G),exteriorPower(g,G)**exteriorPower(g,dual(G)),extContract(g,g,dual G));
+H:=(id_(exteriorPower(a-g,F))**D)*(id_(exteriorPower(a-g,F))**exteriorPower(g,M))*(C);
+return H;
+)
+
+EN = (n,M) -> (f:=rank(source M);
+g:=rank(target M);
+ENo = new MutableList;
+for i from 0 to f-g-n do (
+	ENo#(f-g+1-i)=ENback(f-i,f-g-n-i,M);
+);
+ENo#(1+n)=ENbump(g+n,M);
+if n>0 then (
+for i from 1 to n do (
+	ENo#(i)=ENfront(i,n-i,M);
+);
+);
+ENO=chainComplex((toList(ENo))_{1..#toList(ENo)-1});
+return ENO;
+) 
