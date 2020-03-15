@@ -1,3 +1,7 @@
+needsPackage "KustinMiller"
+needsPackage "ChainComplexOperations"
+needsPackage "ChainComplexExtras"
+
 pfaffs = n -> (L={};
 for i from 1 to n-1 do (L=L|{x_(i,i+1)..x_(i,n)};
 );
