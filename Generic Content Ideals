@@ -1,0 +1,19 @@
+--the generic content ideal for the product of
+--two generic polynomials of degree n and m
+genContent = (n,m) -> (Q=QQ[x_0..x_n,y_0..y_m];
+R=Q[t];
+L1=new MutableList;
+for i from 0 to n do (L1#(#L1)=x_i*t^i);
+L2=new MutableList;
+for i from 0 to m do (L2#(#L2)=y_i*t^i);
+return content(sum(toList L1)*sum(toList L2));
+)
+
+Lcontent = (n,m) -> (Q=QQ[x_0..x_n,y_0..y_m];
+R=Q[t];
+L1=new MutableList;
+for i from 0 to n do (L1#(#L1)=x_i*t^i);
+L2=new MutableList;
+for i from 0 to m do (L2#(#L2)=y_i*t^i);
+return (content(sum(toList L1)*sum(toList L2))+(content(sum(toList L1)))^(m+1)+(content(sum(toList L2)))^(n+1));
+)
