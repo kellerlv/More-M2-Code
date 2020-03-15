@@ -1,0 +1,104 @@
+pfaffs = n -> (L={};
+for i from 1 to n-1 do (L=L|{x_(i,i+1)..x_(i,n)};
+);
+Q=QQ[splice L];
+M=genericSkewMatrix(Q,n);
+F=resBE(M);
+)
+
+genMat = (n,m) -> (L={};
+for i from 1 to n do ( L=L|{x_(i,1)..x_(i,m)};
+);
+Q=QQ[splice L,MonomialOrder=>Lex];
+Mmut:=mutableMatrix(Q,n,m);
+for i from 0 to n-1 do (
+	for j from 0 to m-1 do (
+		Mmut_(i,j)=x_(i+1,j+1);
+	);
+);
+M=matrix Mmut;
+)
+
+init = I -> (monomialIdeal leadTerm(I))
+
+genAlmAlt = (n,m) -> (L1={};
+for i from 1 to n-1 do (L1=L1|{x_(i,i+1)..x_(i,n)};
+);
+L2={};
+for i from 1 to n do ( L2=L2|{y_(i,1)..y_(i,m)};
+);
+Q=QQ[splice L1,splice L2];
+Mmut:=mutableMatrix(Q,n,m);
+for i from 0 to n-1 do (
+	for j from 0 to m-1 do (
+		Mmut_(i,j)=y_(i+1,j+1);
+	);
+);
+M=matrix Mmut;
+A=genericSkewMatrix(Q,n);
+return A|M;
+)
+
+almAltToAlt = M -> (n=rank target M;
+m=rank source M;
+Mn = M_{n..m-1};
+return M||((-transpose Mn)|matrix mutableMatrix(ring(M),m-n,m-n));
+)
+
+inclusion = (n,m,Q) -> (M:=mutableMatrix(Q,m,n);
+for i from 0 to n-1 do M_(i,i)=1;
+return matrix M;
+) 
+
+--Builds the Eagon Northcott complex for the minors
+--of the sylvester matrix. Takes as inputs the ring Q
+--and outputs the resolution of gens Q^k
+enMaxIdeal = (Q,k) -> (L=gens Q;
+n=length(L);
+M=mutableMatrix(Q,k,n+k-1);
+for i from 0 to k-1 do (
+	for j from 0 to n-1 do (
+		M_(i,i+j)=L_j;
+	);
+);
+eagonNorthcott(matrix M)
+)
+
+nonZeros = M -> (L=entries M;
+L1=new MutableList;
+for i in L do (L1#(#L1) = number(i,j -> not(j==0));
+);
+return max(toList L1);
+);
+
+--produces all squarefree monomials of degree n in m variables.
+sqfreeMon = (m,n) -> (Q=QQ[x_1..x_m];
+L:=subsets(1..m,n);
+L1:=new MutableList;
+for i in L do L1#(#L1) = product(i,j->x_j);
+ideal toList L1
+)
+
+maxPower = (n,d) -> (Q=QQ[x_1..x_n];
+(ideal(gens Q))^d
+)
+
+--S should be a subset of [n], r <= n
+elem = (r,n,S) -> (Q=QQ[x_1..x_n];
+subs:=subsets(toList S,r);
+L:=new MutableList;
+for i in subs do (
+	L#(#L) = product(i,j->x_j);
+);
+sum(toList L)
+)
+
+deConciniProcesi = (a,b) -> (n=a+b;
+L=new MutableList;
+for i from 1 to b do (
+	L#(#L)=elem(i,n,1..n);
+);
+E=ideal(apply(toList L,i->substitute(i,Q)));
+J=sqfreeMon(n,b+1);
+substitute(E,Q)+J
+)
